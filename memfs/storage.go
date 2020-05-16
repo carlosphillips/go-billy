@@ -9,14 +9,14 @@ import (
 )
 
 type storage struct {
-	files    map[string]*file
-	children map[string]map[string]*file
+	files    map[string]*fileNode
+	children map[string]map[string]*fileNode
 }
 
 func newStorage() *storage {
 	return &storage{
-		files:    make(map[string]*file, 0),
-		children: make(map[string]map[string]*file, 0),
+		files:    make(map[string]*fileNode, 0),
+		children: make(map[string]map[string]*fileNode, 0),
 	}
 }
 
@@ -39,22 +39,25 @@ func (s *storage) New(path string, mode os.FileMode, flag int) (*file, error) {
 
 	name := filepath.Base(path)
 
-	f := &file{
-		name:    name,
-		content: &content{name: name},
+	n := &fileNode{
+		content: &content{},
 		mode:    mode,
-		flag:    flag,
+	}
+	f := &file{
+		name:     name,
+		flag:     flag,
+		fileNode: n,
 	}
 
-	s.files[path] = f
-	s.createParent(path, mode, f)
+	s.files[path] = n
+	s.createParent(path, mode, n)
 	return f, nil
 }
 
-func (s *storage) createParent(path string, mode os.FileMode, f *file) error {
-	base := filepath.Dir(path)
+func (s *storage) createParent(path string, mode os.FileMode, n *fileNode) error {
+	base, name := filepath.Split(path)
 	base = clean(base)
-	if f.Name() == string(separator) {
+	if name == "" {
 		return nil
 	}
 
@@ -63,10 +66,10 @@ func (s *storage) createParent(path string, mode os.FileMode, f *file) error {
 	}
 
 	if _, ok := s.children[base]; !ok {
-		s.children[base] = make(map[string]*file, 0)
+		s.children[base] = make(map[string]*fileNode, 0)
 	}
 
-	s.children[base][f.Name()] = f
+	s.children[base][name] = n
 	return nil
 }
 
@@ -74,7 +77,8 @@ func (s *storage) Children(path string) []*file {
 	path = clean(path)
 
 	l := make([]*file, 0)
-	for _, f := range s.children[path] {
+	for p, n := range s.children[path] {
+		f := prepareFile(p, n)
 		l = append(l, f)
 	}
 
@@ -96,8 +100,21 @@ func (s *storage) Get(path string) (*file, bool) {
 		return nil, false
 	}
 
-	file, ok := s.files[path]
+	n, ok := s.files[path]
+	if !ok {
+		return nil, ok
+	}
+	file := prepareFile(path, n)
 	return file, ok
+}
+
+func prepareFile(path string, n *fileNode) *file {
+	path = clean(path)
+	base := filepath.Base(path)
+	return &file{
+		fileNode: n,
+		name:     base,
+	}
 }
 
 func (s *storage) Rename(from, to string) error {
@@ -135,7 +152,6 @@ func (s *storage) Rename(from, to string) error {
 
 func (s *storage) move(from, to string) error {
 	s.files[to] = s.files[from]
-	s.files[to].name = filepath.Base(to)
 	s.children[to] = s.children[from]
 
 	defer func() {
@@ -150,19 +166,19 @@ func (s *storage) move(from, to string) error {
 func (s *storage) Remove(path string) error {
 	path = clean(path)
 
-	f, has := s.Get(path)
+	n, has := s.Get(path)
 	if !has {
 		return os.ErrNotExist
 	}
 
-	if f.mode.IsDir() && len(s.children[path]) != 0 {
+	if n.mode.IsDir() && len(s.children[path]) != 0 {
 		return fmt.Errorf("dir: %s contains files", path)
 	}
 
-	base, file := filepath.Split(path)
+	base, name := filepath.Split(path)
 	base = filepath.Clean(base)
 
-	delete(s.children[base], file)
+	delete(s.children[base], name)
 	delete(s.files, path)
 	return nil
 }
@@ -172,17 +188,12 @@ func clean(path string) string {
 }
 
 type content struct {
-	name  string
 	bytes []byte
 }
 
 func (c *content) WriteAt(p []byte, off int64) (int, error) {
 	if off < 0 {
-		return 0, &os.PathError{
-			Op:   "writeat",
-			Path: c.name,
-			Err:  errors.New("negative offset"),
-		}
+		return 0, errors.New("negative offset")
 	}
 
 	prev := len(c.bytes)
@@ -202,11 +213,7 @@ func (c *content) WriteAt(p []byte, off int64) (int, error) {
 
 func (c *content) ReadAt(b []byte, off int64) (n int, err error) {
 	if off < 0 {
-		return 0, &os.PathError{
-			Op:   "readat",
-			Path: c.name,
-			Err:  errors.New("negative offset"),
-		}
+		return 0, errors.New("negative offset")
 	}
 
 	size := int64(len(c.bytes))

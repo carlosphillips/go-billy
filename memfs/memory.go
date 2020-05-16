@@ -200,13 +200,17 @@ func (fs *Memory) Capabilities() billy.Capability {
 }
 
 type file struct {
+	*fileNode
 	name     string
-	content  *content
 	position int64
 	flag     int
-	mode     os.FileMode
 
 	isClosed bool
+}
+
+type fileNode struct {
+	content *content
+	mode    os.FileMode
 }
 
 func (f *file) Name() string {
@@ -234,6 +238,13 @@ func (f *file) ReadAt(b []byte, off int64) (int, error) {
 	}
 
 	n, err := f.content.ReadAt(b, off)
+	if err != nil && err != io.EOF {
+		err = &os.PathError{
+			Op:   "readat",
+			Path: f.name[1:],
+			Err:  err,
+		}
+	}
 
 	return n, err
 }
@@ -265,6 +276,13 @@ func (f *file) Write(p []byte) (int, error) {
 	}
 
 	n, err := f.content.WriteAt(p, f.position)
+	if err != nil {
+		err = &os.PathError{
+			Op:   "writeat",
+			Path: f.name[1:],
+			Err:  err,
+		}
+	}
 	f.position += int64(n)
 
 	return n, err
@@ -291,10 +309,12 @@ func (f *file) Truncate(size int64) error {
 
 func (f *file) Duplicate(filename string, mode os.FileMode, flag int) billy.File {
 	new := &file{
-		name:    filename,
-		content: f.content,
-		mode:    mode,
-		flag:    flag,
+		name: filename,
+		flag: flag,
+		fileNode: &fileNode{
+			content: f.content,
+			mode:    mode,
+		},
 	}
 
 	if isAppend(flag) {
