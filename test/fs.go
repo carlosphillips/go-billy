@@ -17,6 +17,7 @@ type FilesystemSuite struct {
 	BasicSuite
 	DirSuite
 	SymlinkSuite
+	LinkSuite
 	TempFileSuite
 	ChrootSuite
 }
@@ -27,6 +28,7 @@ func NewFilesystemSuite(fs Filesystem) FilesystemSuite {
 	s.BasicSuite.FS = s.FS
 	s.DirSuite.FS = s.FS
 	s.SymlinkSuite.FS = s.FS
+	s.LinkSuite.FS = s.FS
 	s.TempFileSuite.FS = s.FS
 	s.ChrootSuite.FS = s.FS
 

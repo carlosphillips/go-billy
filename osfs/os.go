@@ -123,6 +123,12 @@ func (fs *OS) Symlink(target, link string) error {
 	return os.Symlink(target, link)
 }
 
+func (fs *OS) Link(target, link string) error {
+	target = filepath.Clean(target)
+	link = filepath.Clean(link)
+	return os.Link(target, link)
+}
+
 func (fs *OS) Readlink(link string) (string, error) {
 	return os.Readlink(link)
 }

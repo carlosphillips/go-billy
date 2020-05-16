@@ -177,6 +177,22 @@ func (fs *ChrootHelper) Symlink(target, link string) error {
 	return fs.underlying.(billy.Symlink).Symlink(target, link)
 }
 
+func (fs *ChrootHelper) Link(target, link string) error {
+	var err error
+
+	target, err = fs.underlyingPath(target)
+	if err != nil {
+		return err
+	}
+
+	link, err = fs.underlyingPath(link)
+	if err != nil {
+		return err
+	}
+
+	return fs.underlying.(billy.Link).Link(target, link)
+}
+
 func (fs *ChrootHelper) Readlink(link string) (string, error) {
 	fullpath, err := fs.underlyingPath(link)
 	if err != nil {

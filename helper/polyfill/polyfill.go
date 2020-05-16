@@ -13,7 +13,7 @@ type Polyfill struct {
 	c capabilities
 }
 
-type capabilities struct{ tempfile, dir, symlink, chroot bool }
+type capabilities struct{ tempfile, dir, symlink, link, chroot bool }
 
 // New creates a new filesystem wrapping up 'fs' the intercepts all the calls
 // made and errors if fs doesn't implement any of the billy interfaces.
@@ -27,6 +27,7 @@ func New(fs billy.Basic) billy.Filesystem {
 	_, h.c.tempfile = h.Basic.(billy.TempFile)
 	_, h.c.dir = h.Basic.(billy.Dir)
 	_, h.c.symlink = h.Basic.(billy.Symlink)
+	_, h.c.link = h.Basic.(billy.Link)
 	_, h.c.chroot = h.Basic.(billy.Chroot)
 	return h
 }
@@ -61,6 +62,15 @@ func (h *Polyfill) Symlink(target, link string) error {
 	}
 
 	return h.Basic.(billy.Symlink).Symlink(target, link)
+}
+
+func (h *Polyfill) Link(target, link string) error {
+
+	if !h.c.link {
+		return billy.ErrNotSupported
+	}
+
+	return h.Basic.(billy.Link).Link(target, link)
 }
 
 func (h *Polyfill) Readlink(link string) (string, error) {

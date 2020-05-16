@@ -54,6 +54,7 @@ type Filesystem interface {
 	TempFile
 	Dir
 	Symlink
+	Link
 	Chroot
 }
 
@@ -126,6 +127,14 @@ type Symlink interface {
 	Symlink(target, link string) error
 	// Readlink returns the target path of link.
 	Readlink(link string) (string, error)
+}
+
+// Link abstract the link related operations in a storage-agnostic
+// interface as an extension to the Basic interface.
+type Link interface {
+	// Link creates a hard-link from link to target. target may be an absolute or
+	// relative path.
+	Link(target, link string) error
 }
 
 // Change abstract the FileInfo change related operations in a storage-agnostic

@@ -141,6 +141,20 @@ func (h *Mount) Symlink(target, link string) error {
 	return fs.Symlink(target, fullpath)
 }
 
+func (h *Mount) Link(target, link string) error {
+	fs, fullpath, err := h.getLinkAndPath(link)
+	if err != nil {
+		return err
+	}
+
+	resolved := filepath.Join(filepath.Dir(link), target)
+	if h.isMountpoint(resolved) != h.isMountpoint(link) {
+		return fmt.Errorf("invalid symlink, target is crossing filesystems")
+	}
+
+	return fs.Link(target, fullpath)
+}
+
 func (h *Mount) Join(elem ...string) string {
 	return h.underlying.Join(elem...)
 }
@@ -197,6 +211,15 @@ func (fs *Mount) getSymlinkAndPath(path string) (billy.Symlink, string, error) {
 	}
 
 	return fs.source.(billy.Symlink), fs.mustRelToMountpoint(path), nil
+}
+
+func (fs *Mount) getLinkAndPath(path string) (billy.Link, string, error) {
+	path = cleanPath(path)
+	if !fs.isMountpoint(path) {
+		return fs.underlying.(billy.Link), path, nil
+	}
+
+	return fs.source.(billy.Link), fs.mustRelToMountpoint(path), nil
 }
 
 func (fs *Mount) mustRelToMountpoint(path string) string {

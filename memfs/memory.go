@@ -173,6 +173,10 @@ func (fs *Memory) Symlink(target, link string) error {
 	return util.WriteFile(fs, link, []byte(target), 0777|os.ModeSymlink)
 }
 
+func (fs *Memory) Link(target, link string) error {
+	return fs.s.Link(target, link)
+}
+
 func (fs *Memory) Readlink(link string) (string, error) {
 	f, has := fs.s.Get(link)
 	if !has {

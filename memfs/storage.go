@@ -117,6 +117,31 @@ func prepareFile(path string, n *fileNode) *file {
 	}
 }
 
+func (s *storage) Link(target, link string) error {
+	target = clean(target)
+	link = clean(link)
+	linkBase := filepath.Dir(link)
+	linkBase = clean(linkBase)
+
+	f, ok := s.Get(target)
+	if !ok {
+		return &os.LinkError{"link", target, link, os.ErrNotExist}
+	}
+
+	if s.Has(link) {
+		return &os.LinkError{"link", target, link, os.ErrExist}
+	}
+
+	d, ok := s.Get(linkBase)
+	if !ok || !d.mode.IsDir() {
+		return &os.LinkError{"link", target, link, os.ErrNotExist}
+	}
+
+	s.files[link] = f.fileNode
+	s.createParent(link, 0666, f.fileNode)
+	return nil
+}
+
 func (s *storage) Rename(from, to string) error {
 	from = clean(from)
 	to = clean(to)
