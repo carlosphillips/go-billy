@@ -216,6 +216,10 @@ func (fs *ChrootHelper) Readlink(link string) (string, error) {
 	return string(os.PathSeparator) + target, nil
 }
 
+func (fs *ChrootHelper) SameFile(fi1, fi2 os.FileInfo) bool {
+	return fs.underlying.SameFile(fi1, fi2)
+}
+
 func (fs *ChrootHelper) Chroot(path string) (billy.Filesystem, error) {
 	fullpath, err := fs.underlyingPath(path)
 	if err != nil {

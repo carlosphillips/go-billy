@@ -87,6 +87,8 @@ type Basic interface {
 	// particular, all empty strings are ignored. On Windows, the result is a
 	// UNC path if and only if the first path element is a UNC path.
 	Join(elem ...string) string
+	// SameFile indicates whether the two file descriptors refer to the same file.
+	SameFile(fi1, fi2 os.FileInfo) bool
 }
 
 type TempFile interface {

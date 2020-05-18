@@ -168,6 +168,10 @@ func (h *Mount) Readlink(link string) (string, error) {
 	return fs.Readlink(fullpath)
 }
 
+func (h *Mount) SameFile(fi1, fi2 os.FileInfo) bool {
+	return h.underlying.SameFile(fi1, fi2)
+}
+
 func (h *Mount) Lstat(path string) (os.FileInfo, error) {
 	fs, fullpath, err := h.getSymlinkAndPath(path)
 	if err != nil {

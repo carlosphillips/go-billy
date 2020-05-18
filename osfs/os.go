@@ -133,6 +133,10 @@ func (fs *OS) Readlink(link string) (string, error) {
 	return os.Readlink(link)
 }
 
+func (fs *OS) SameFile(fi1, fi2 os.FileInfo) bool {
+	return os.SameFile(fi1, fi2)
+}
+
 // Capabilities implements the Capable interface.
 func (fs *OS) Capabilities() billy.Capability {
 	return billy.DefaultCapabilities

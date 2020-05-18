@@ -194,6 +194,15 @@ func (fs *Memory) Readlink(link string) (string, error) {
 	return string(f.content.bytes), nil
 }
 
+func (fs *Memory) SameFile(fi1, fi2 os.FileInfo) bool {
+	fs1, ok1 := fi1.(*fileInfo)
+	fs2, ok2 := fi2.(*fileInfo)
+	if !ok1 || !ok2 {
+		return false
+	}
+	return fs1.node == fs2.node
+}
+
 // Capabilities implements the Capable interface.
 func (fs *Memory) Capabilities() billy.Capability {
 	return billy.WriteCapability |
@@ -336,7 +345,7 @@ func (f *file) Stat() (os.FileInfo, error) {
 	return &fileInfo{
 		name: f.Name(),
 		mode: f.mode,
-		size: f.content.Len(),
+		node: f.fileNode,
 	}, nil
 }
 
@@ -352,8 +361,8 @@ func (f *file) Unlock() error {
 
 type fileInfo struct {
 	name string
-	size int
 	mode os.FileMode
+	node *fileNode
 }
 
 func (fi *fileInfo) Name() string {
@@ -361,7 +370,7 @@ func (fi *fileInfo) Name() string {
 }
 
 func (fi *fileInfo) Size() int64 {
-	return int64(fi.size)
+	return int64(fi.node.content.Len())
 }
 
 func (fi *fileInfo) Mode() os.FileMode {

@@ -81,6 +81,10 @@ func (h *Polyfill) Readlink(link string) (string, error) {
 	return h.Basic.(billy.Symlink).Readlink(link)
 }
 
+func (h *Polyfill) SameFile(fi1, fi2 os.FileInfo) bool {
+	return h.Basic.SameFile(fi1, fi2)
+}
+
 func (h *Polyfill) Lstat(path string) (os.FileInfo, error) {
 	if !h.c.symlink {
 		return nil, billy.ErrNotSupported

@@ -17,6 +17,7 @@ type BasicMock struct {
 	RenameArgs   [][2]string
 	RemoveArgs   []string
 	JoinArgs     [][]string
+	SameFileArgs [][2]os.FileInfo
 }
 
 func (fs *BasicMock) Create(filename string) (billy.File, error) {
@@ -52,6 +53,11 @@ func (fs *BasicMock) Remove(filename string) error {
 func (fs *BasicMock) Join(elem ...string) string {
 	fs.JoinArgs = append(fs.JoinArgs, elem)
 	return path.Join(elem...)
+}
+
+func (fs *BasicMock) SameFile(fi1, fi2 os.FileInfo) bool {
+	fs.SameFileArgs = append(fs.SameFileArgs, [2]os.FileInfo{fi1, fi2})
+	return false
 }
 
 type TempFileMock struct {
